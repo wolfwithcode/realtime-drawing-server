@@ -15,7 +15,7 @@ function subscribeToDrawings({ client, connection}){
     console.log("  subscribeToDrawings " )
     r.table('drawings')
     .changes({ include_initial: true })
-    .run(connection)
+    .run(connection) 
     .then((cursor) => {
         console.log("client id emit drawing with value", client.id )
         cursor.each( (err, drawingRow) => {
@@ -24,6 +24,15 @@ function subscribeToDrawings({ client, connection}){
         });
     })
 }
+
+
+function handleLinePublish({ connection , line }){
+    console.log('saving line to the db');
+    r.table('lines')
+    .insert(Object.assign(line, {timestamp: new Date()}))
+    .run(connection);
+}
+
 
 
 r.connect({
@@ -49,7 +58,12 @@ r.connect({
 
         client.on('disconnect', () => {
             console.log("disconnection client id", client.id);
-        })
+        });
+
+        client.on('publishLine', (line) => handleLinePublish({
+            line,
+            connection,
+        }));
 
     });
     
