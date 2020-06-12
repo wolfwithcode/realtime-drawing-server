@@ -11,7 +11,7 @@ function createDrawing( { connection, name }){
     .then(() => console.log('created a new drawing with name ', name));
 }
 
-function subscribeToDrawings({ client, connection}){
+function subscribeToDrawings({ client, connection, drawingId}){
     console.log("  subscribeToDrawings " )
     r.table('drawings')
     .changes({ include_initial: true })
@@ -33,7 +33,16 @@ function handleLinePublish({ connection , line }){
     .run(connection);
 }
 
-
+function subscribeToDrawingLines({client, connection, drawingId}){
+    return r.table('lines')
+    .filter(r.row('drawingId').eq(drawingId))
+    .changes({includeInitial: true})
+    .run(connection)
+    .then((cursor) => {
+        cursor.each((err, lineRow) => 
+            client.emit(`drawingLine:${drawingId}`, lineRow.new_val));
+    })
+}
 
 r.connect({
     host: 'localhost',
@@ -65,9 +74,17 @@ r.connect({
             connection,
         }));
 
+        client.on('subscribeToDrawingLines', (drawingId) => {
+            subscribeToDrawingLines({
+                client,
+                connection,
+                drawingId,
+            });
+        });
+
     });
     
-}) 
+});
 
 
 const port = 8000;
