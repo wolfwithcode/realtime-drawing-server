@@ -17,8 +17,11 @@ function subscribeToDrawings({ client, connection}){
     .changes({ include_initial: true })
     .run(connection)
     .then((cursor) => {
-        console.log("client emit drawing with value", cursor )
-        cursor.each( (err, drawingRow) => client.emit('drawing', drawingRow.new_val));
+        console.log("client id emit drawing with value", client.id )
+        cursor.each( (err, drawingRow) => {
+            console.log("client id ", client.id, " emit value ", drawingRow);
+            client.emit('drawing', drawingRow.new_val)
+        });
     })
 }
 
@@ -30,9 +33,11 @@ r.connect({
 }).then((connection) => {
     
     io.on('connection', (client) => {        
-            // console.log("connection ", connection);
+        
+        console.log("connection client id ", client.id);
+
         client.on('createDrawing', ({name}) => {
-            console.log("createDrawing connection ", connection);
+            // console.log("createDrawing connection ", connection);
             console.log("createDrawing name ", name);
             createDrawing( { connection, name });
         });
@@ -41,6 +46,10 @@ r.connect({
             client,
             connection,
         }));
+
+        client.on('disconnect', () => {
+            console.log("disconnection client id", client.id);
+        })
 
     });
     
